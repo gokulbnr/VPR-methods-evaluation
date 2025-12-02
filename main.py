@@ -76,6 +76,19 @@ def main(args):
     # Use a kNN to find predictions
     faiss_index = faiss.IndexFlatL2(args.descriptors_dimension)
     faiss_index.add(database_descriptors)
+    
+    distance_matrix = faiss.pairwise_distances(database_descriptors, queries_descriptors)
+    similarity_matrix = 1 / distance_matrix
+    similarity_matrix_sorted = np.zeros_like(similarity_matrix)
+    for i, q_idx in enumerate(range(test_ds.num_queries)):
+        for j, db_idx in enumerate(range(test_ds.num_database)):
+            similarity_matrix_sorted[j,i] = similarity_matrix[db_idx, q_idx]
+            
+    dist_outfile = os.path.join(log_dir, f'{args.method.lower()}_distance_matrix.npy')
+    sim_outfile = os.path.join(log_dir, f'{args.method.lower()}_similarity_matrix.npy')
+    np.save(dist_outfile, distance_matrix)
+    np.save(sim_outfile, similarity_matrix_sorted)
+    
     del database_descriptors, all_descriptors
 
     logger.debug("Calculating recalls")
